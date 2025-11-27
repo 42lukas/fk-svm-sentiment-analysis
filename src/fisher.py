@@ -28,7 +28,7 @@ class Fisher_Vectorizer:
         V = c.shape[0]
         
         # 4) Theta mit alpha um division durch Null zu vermeiden
-        self.theta = (c + self.alpha) / (C + self.alpha * V)
+        self.theta = ((c + self.alpha) / (C + self.alpha * V)).astype(np.float32)
 
     def fisher_scores(self, X: csr_matrix) -> csr_matrix:
         # Wenn ein Wort in einem Tweet häufig vorkommt, aber im Modell selten ist (kleine θ (theta)), bekommt man einen hohen Score.
@@ -73,7 +73,7 @@ class Fisher_Vectorizer:
         # 4) Numerisch stabil machen: keine 0-Werte erlauben
         I_diag[I_diag == 0] = 1e-8
 
-        self.I_diag = I_diag
+        self.I_diag = I_diag.astype(np.float32)
 
     def transform(self, X: csr_matrix) -> csr_matrix:
         """
