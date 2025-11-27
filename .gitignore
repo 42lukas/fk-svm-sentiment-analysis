@@ -12,6 +12,9 @@ example.txt
 data/
 results/
 
+# model files
+models/
+
 # IDE files
 .vscode/idea/
 *.iml
