@@ -1,6 +1,7 @@
 # src/main.py
 import pandas as pd
 from text_prep import Text_prep
+from bow import BoW
 
 def main():
     '''
@@ -17,6 +18,7 @@ def main():
         return
 
     print("File content loaded successfully...")
+
     text_processor = Text_prep(text_list)
     test_processor = Text_prep(test_list)
     val_processor = Text_prep(val_list)
@@ -24,14 +26,22 @@ def main():
     test_tokens = test_processor.preprocess_list()
     val_tokens = val_processor.preprocess_list()
     print("tokens were created successfully...")
+
     dict = text_processor.count_tokens_frequency(token_list)
     print("Token frequency counted successfully...")
+    
     sorted_tokens_list = text_processor.sort_tokens(dict)
     print("Dictionary is sorted descending...")
-    index2word = text_processor.index_to_word(sorted_tokens_list)
-    word2index = text_processor.word_to_index(sorted_tokens_list)
-    print("word/index lists created successfully...")
-    print(sorted_tokens_list[:10])
+    print(sorted_tokens_list[:10]) # print top 10 tokens (debugging)
+
+    bow = BoW()
+    word2idx, idx2word = bow.build_vocabulary(sorted_tokens_list)
+    print("Vocabulary built successfully...")
+
+    X_train = bow.vectorize_list(token_list)
+    X_val   = bow.vectorize_list(val_tokens)
+    X_test  = bow.vectorize_list(test_tokens)  
+    print("BoW-Matrices created successfully...")
 
 
 
