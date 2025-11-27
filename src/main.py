@@ -2,6 +2,7 @@
 import pandas as pd
 from text_prep import Text_prep
 from bow import BoW
+from fisher import Fisher_Vectorizer
 
 def main():
     '''
@@ -42,6 +43,12 @@ def main():
     X_val   = bow.vectorize_list(val_tokens)
     X_test  = bow.vectorize_list(test_tokens)  
     print("BoW-Matrices created successfully...")
+
+    fisher_vectorizer = Fisher_Vectorizer(alpha=1.0)
+    Phi_train = fisher_vectorizer.fit_transform(X_train)
+    Phi_val   = fisher_vectorizer.transform(X_val)
+    Phi_test  = fisher_vectorizer.transform(X_test)
+    print("Fisher-Features created successfully...")
 
 
 
