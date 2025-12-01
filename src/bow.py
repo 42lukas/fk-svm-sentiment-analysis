@@ -49,7 +49,3 @@ class BoW:
             shape=(num_docs, vocab_size),
         )
         return X
-
-    def print_vocabulary(self):
-        for index, word in enumerate(self.idx2word):
-            print(f"Index: {index}, Word: {word}")

@@ -38,7 +38,7 @@ class Text_prep():
         return frequency
     
     def sort_tokens(self, dict):
-        V = 3000 # fixed vocabulary size
+        V = 10000
 
         sorted_tokens = sorted(dict.items(), key=lambda item: item[1], reverse=True)
         sorted_tokens = sorted_tokens[:V] # keep only the top V tokens

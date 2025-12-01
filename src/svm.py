@@ -3,7 +3,6 @@ from sklearn.metrics import accuracy_score
 
 class SVM_Classifier:
     def __init__(self, C=1.0, max_iter=2000):
-        # n_samples >> n_features -> dual=False ist oft schneller
         self.model = LinearSVC(C=C, dual=False, max_iter=max_iter)
 
     def train(self, X_train, y_train):
