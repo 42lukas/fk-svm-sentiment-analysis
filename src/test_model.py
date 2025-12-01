@@ -4,16 +4,19 @@ from joblib import load
 from text_prep import Text_prep
 from scipy.sparse import csr_matrix
 
-MODEL_PATH = "models/fisher_svm_sentiment.joblib"
 
-
-def load_model(model_path=MODEL_PATH):
+def load_model(model_path):
     """
-    Lädt das gespeicherte Modell-Bundle:
-    - bow: BoW-Instanz mit Vokabular (word2idx, idx2word)
-    - plsa: trainiertes PLSA-Modell (P(w|z), P(z|d) vom Training)
-    - fisher: Fisher_Vectorizer mit theta und I_diag (auf Topic-Raum trainiert)
-    - svm: trainiertes SVM-Modell
+    Loads a saved model bundle.
+
+    The bundle may contain:
+      - 'bow': BoW instance with vocabulary (word2idx, idx2word)
+      - 'fisher': Fisher_Vectorizer with theta and I_diag
+      - 'svm': trained SVM model
+      - optionally 'plsa': trained PLSA-like model
+
+    Returns:
+      bow, fisher, svm_model, plsa_or_none
     """
     try:
         bundle = load(model_path)
@@ -21,80 +24,105 @@ def load_model(model_path=MODEL_PATH):
         print(f"Error loading model from '{model_path}': {e}")
         sys.exit(1)
 
+    if "bow" not in bundle or "fisher" not in bundle or "svm" not in bundle:
+        print("Loaded bundle does not contain required keys ('bow', 'fisher', 'svm').")
+        sys.exit(1)
+
     bow = bundle["bow"]
-    plsa = bundle["plsa"]
     fisher = bundle["fisher"]
     svm_model = bundle["svm"]
+    plsa = bundle.get("plsa", None)  # may be None for BoW-only model
 
-    return bow, plsa, fisher, svm_model
+    return bow, fisher, svm_model, plsa
 
 
-def predict_text(bow, plsa, fisher, svm_model, text: str) -> int:
+def predict_text(bow, fisher, svm_model, text: str, plsa=None) -> int:
     """
-    Nimmt einen Roh-Text, wendet die gleiche Preprocessing-Pipeline an
-    wie beim Training, und gibt das vorhergesagte Label (0/1) zurück.
+    Takes a raw text, applies the same preprocessing pipeline as in training,
+    and returns the predicted label (0/1).
 
-    Pipeline:
-      Text -> Preprocessing/Tokenisierung
-           -> BoW-Vektor
-           -> PLSA: P(z|d) für diesen Text
-           -> Fisher-Features im Topic-Raum
-           -> SVM-Prediction
+    If 'plsa' is not None, the pipeline is:
+      Text -> Preprocessing/Tokenization
+           -> BoW vector
+           -> PLSA: P(z|d) for this text
+           -> Fisher features in topic space
+           -> SVM prediction
+
+    If 'plsa' is None, the pipeline is:
+      Text -> Preprocessing/Tokenization
+           -> BoW vector
+           -> Fisher features from BoW
+           -> SVM prediction
     """
 
-    # 1) Preprocessing + Tokenizing (Text_prep wie im Training benutzen)
+    # 1) Preprocessing + Tokenization
     processor = Text_prep([text])
-    token_list = processor.preprocess_list()  # Liste mit genau einem Eintrag
+    token_list = processor.preprocess_list()  # list with exactly one entry
     tokens = token_list[0]
 
-    # 2) BoW-Vektor für diesen einen Text (gleiche Vokabel wie im Training)
-    X_user = bow.vectorize_list([tokens])  # csr_matrix mit Shape (1, vocab_size)
+    # 2) BoW vector for this single text
+    X_user = bow.vectorize_list([tokens])  # csr_matrix with shape (1, vocab_size)
 
-    # 3) PLSA: Doc-Topic-Verteilung P(z|d) für diesen Text
-    #    plsa.transform erwartet eine csr_matrix mit dem gleichen Vokabular
-    topic_user = plsa.transform(X_user)      # np.array mit Shape (1, num_topics)
+    # 3) Either go through PLSA or directly to Fisher
+    if plsa is not None:
+        # PLSA: doc-topic distribution P(z|d)
+        topic_user = plsa.transform(X_user)            # np.array with shape (1, num_topics)
+        T_user = csr_matrix(topic_user.astype("float32"))  # (1, num_topics)
+        Phi_user = fisher.transform(T_user)           # csr_matrix (1, num_topics)
+    else:
+        # No PLSA: Fisher directly on BoW
+        Phi_user = fisher.transform(X_user)           # csr_matrix (1, vocab_size)
 
-    # 4) In Sparse-Form bringen, damit Fisher_Vectorizer wie im Training arbeitet
-    T_user = csr_matrix(topic_user.astype("float32"))  # (1, num_topics)
-
-    # 5) Fisher-Features im Topic-Raum
-    Phi_user = fisher.transform(T_user)     # csr_matrix (1, num_topics)
-
-    # 6) SVM-Prediction
-    pred = svm_model.predict(Phi_user)[0]   # einzelnes Label (0 oder 1)
+    # 4) SVM prediction
+    pred = svm_model.predict(Phi_user)[0]            # single label (0 or 1)
 
     return pred
 
 
 def interactive_loop():
     """
-    Lädt das Modell und startet eine interaktive Eingabe-Schleife,
-    in der der User Texte eingibt und Sentiment-Vorhersagen bekommt.
+    Loads a saved model and enters an interactive loop
+    to predict sentiment on user-input texts.
     """
-    print(f"Lade Modell aus '{MODEL_PATH}' ...")
-    bow, plsa, fisher, svm_model = load_model()
-    print("Modell erfolgreich geladen.\n")
+    choice = input("Which model would you like to load? (plsa/bow): ").strip().lower()
+    if choice not in ("plsa", "bow"):
+        print("Please enter 'plsa' or 'bow', nothing else!")
+        return
 
-    print("Interaktiver Sentiment-Test.")
-    print("Gib einen Text ein und drücke Enter.")
-    print("Tippe 'quit' oder 'exit', um zu beenden.\n")
+    if choice == "plsa":
+        model_path = "models/fisher_svm_sentiment-plsa.joblib"
+    else:
+        model_path = "models/fisher_svm_sentiment.joblib"
+
+    print(f"Load model from '{model_path}' ...")
+    bow, fisher, svm_model, plsa = load_model(model_path=model_path)
+    print("Model was loaded successfully.\n")
+
+    if plsa is not None:
+        print("Loaded PLSA-based FK-SVM model.")
+    else:
+        print("Loaded BoW + Fisher + SVM model (no PLSA).")
+
+    print("\nInteractive sentiment test.")
+    print("Enter a text and press 'Enter' to proceed.")
+    print("Enter 'quit' or 'exit' to end the test.\n")
 
     while True:
         try:
             user_text = input("Text: ")
         except (EOFError, KeyboardInterrupt):
-            print("\nBeende.")
+            print("\nEnd.")
             break
 
         if user_text.strip().lower() in ("quit", "exit"):
-            print("Beende.")
+            print("End.")
             break
 
         if not user_text.strip():
-            print("Bitte keinen leeren Text eingeben.\n")
+            print("Please don't enter an empty text.\n")
             continue
 
-        pred = predict_text(bow, plsa, fisher, svm_model, user_text)
+        pred = predict_text(bow, fisher, svm_model, user_text, plsa=plsa)
         label = "NEGATIV" if pred == 0 else "POSITIV"
 
         print(f"-> Prediction: {label}\n")
