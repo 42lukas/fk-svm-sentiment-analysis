@@ -1,5 +1,9 @@
 # src/bow.py
 
+# this file implements a Bag-of-Words (BoW) model
+# it can build a vocabulary from a list of tokens
+# and vectorize a list of tokenized documents into a sparse matrix
+
 from collections import Counter
 from scipy.sparse import csr_matrix
 import numpy as np
@@ -30,8 +34,10 @@ class BoW:
         cols = []
         data = []
 
+        # count word occurrences per document
         for row_idx, tokens in enumerate(token_list):
             counts = Counter(tokens)
+            # fill the sparse matrix data
             for token, count in counts.items():
                 idx = self.word2idx.get(token)
                 if idx is not None:

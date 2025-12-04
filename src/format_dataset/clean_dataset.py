@@ -14,19 +14,19 @@ def clean_text(text: str) -> str:
     # HTML-Entities decodieren (z.B. &lt; -> <)
     text = html.unescape(text)
 
-    # URLs entfernen
+    # remove URLs
     text = re.sub(r"http\S+|www\.\S+", " ", text)
 
-    # @usernames entfernen
+    # remove @usernames
     text = re.sub(r"@\w+", " ", text)
 
-    # Nicht-ASCII-Zeichen entfernen (Â, ã…, kyrillisch, usw.)
+    # remove non ASCII characters ((Â, ã…, kyrillisch, ...)
     text = text.encode("ascii", "ignore").decode("ascii")
 
-    # Lowercase
+    # to lower case
     text = text.lower()
 
-    # Mehrfache Whitespaces zu einem machen
+    # transfom multiple spaces to single space and strip leading/trailing spaces
     text = re.sub(r"\s+", " ", text).strip()
 
     return text
