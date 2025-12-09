@@ -203,3 +203,12 @@ def load_file(file_path):
 
 if __name__ == "__main__":
     main()
+
+
+
+
+# next Step for wear-app:
+# 0. remove plsa completely in new branch wear-app-model
+# 1. fetch new data from jigsaw dataset with 0=toxic/bad and 1=neutral/ok comments (reddit/twitter/insta, usw. geht nicht einfach Jigsaw Toxic Comments nutzen)
+# 2. retrain model with new categories
+# 3. test model in wear-app and report toxic/bad categorized comments
