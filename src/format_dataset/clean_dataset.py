@@ -35,7 +35,7 @@ def clean_text(text: str) -> str:
 df = pd.read_csv("/Users/lukaskarsten/Desktop/Informatik/Repos/fk-svm-sentiment-analysis/data/training.1600000.processed.noemoticon.csv",
                 names=['polarity', 'id', 'date', 'query', 'user', 'text'],
                 encoding='latin-1')
-print(df.head()) # print the first 5 rows to see the structure
+print(df.head()) # print the first 5 rows to see the structure of the dataset
 print(df.polarity.value_counts()) # check the distribution of classes
 
 # keep only the necessary columns: polarity and text
@@ -51,5 +51,5 @@ print(df.head())
 df.polarity = df.polarity.replace({0: 0, 4: 1})
 print(df.polarity.value_counts())
 
-# save the cleaned dataset
+# save the cleaned dataset to a new csv file
 df.to_csv("data/sentiment140-subset.csv", index=False)
