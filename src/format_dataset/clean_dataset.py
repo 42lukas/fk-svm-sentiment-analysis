@@ -1,7 +1,7 @@
 # src/format_dataset/clean_dataset.py
 
 # this file is to clean the Sentiment140 dataset after downloading
-# it removes unnecessary columns
+# it removes unnecessary columns and cleans the text data
 
 import pandas as pd
 import re
